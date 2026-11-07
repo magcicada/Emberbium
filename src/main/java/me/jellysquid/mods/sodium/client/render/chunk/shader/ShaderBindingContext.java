@@ -8,5 +8,9 @@ import java.util.function.IntFunction;
 public interface ShaderBindingContext {
     <U extends GlUniform<?>> U bindUniform(String name, IntFunction<U> factory);
 
+    default <U extends GlUniform<?>> U bindUniformIfPresent(String name, IntFunction<U> factory) {
+        return this.bindUniform(name, factory);
+    }
+
     GlUniformBlock bindUniformBlock(String name, int bindingPoint);
 }

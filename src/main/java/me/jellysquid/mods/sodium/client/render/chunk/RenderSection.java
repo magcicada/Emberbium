@@ -50,6 +50,7 @@ public class RenderSection {
     // Rendering State
     private boolean built = false; // merge with the flags?
     private int flags = RenderSectionFlags.NONE;
+    private boolean fadeInDecided;
     private BlockEntity @Nullable[] globalBlockEntities;
     private BlockEntity @Nullable[] culledBlockEntities;
     private TextureAtlasSprite @Nullable[] animatedSprites;
@@ -156,7 +157,23 @@ public class RenderSection {
         }
     }
 
+    public void skipFadeIn() {
+        this.fadeInDecided = true;
+    }
+
+    public boolean isFadeInDecided() {
+        return this.fadeInDecided;
+    }
+
     private void setRenderState(@NotNull BuiltSectionInfo info) {
+        if (!this.fadeInDecided) {
+            this.fadeInDecided = true;
+
+            if ((info.flags & (1 << RenderSectionFlags.HAS_BLOCK_GEOMETRY)) != 0) {
+                this.region.startFadeIn(this.sectionIndex);
+            }
+        }
+
         this.built = true;
         this.flags = info.flags;
         this.visibilityData = info.visibilityData;

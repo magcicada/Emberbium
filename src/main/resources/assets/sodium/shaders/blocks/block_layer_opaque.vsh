@@ -20,6 +20,11 @@ out float v_FragDistance;
 uniform int u_FogShape;
 uniform vec3 u_RegionOffset;
 
+#ifdef USE_CHUNK_FADE_IN
+uniform vec4 u_FadeIn[64];
+flat out float v_FadeIn;
+#endif
+
 uniform sampler2D u_LightTex; // The light map texture sampler
 
 vec4 _sample_lightmap(sampler2D lightMap, ivec2 uv) {
@@ -37,6 +42,10 @@ vec3 _get_draw_translation(uint pos) {
 
 void main() {
     _vert_init();
+
+#ifdef USE_CHUNK_FADE_IN
+    v_FadeIn = u_FadeIn[int(_draw_id >> 2u)][int(_draw_id & 3u)];
+#endif
 
     // Transform the chunk-local vertex position into world model space
     vec3 translation = u_RegionOffset + _get_draw_translation(_draw_id);

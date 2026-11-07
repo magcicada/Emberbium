@@ -4,6 +4,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMaps;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.*;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.minecraft.world.phys.BlockHitResult;
@@ -67,6 +69,9 @@ public class RenderSectionManager {
     private final ClonedChunkSectionCache sectionCache;
 
     private final Long2ReferenceMap<RenderSection> sectionByPosition = new Long2ReferenceOpenHashMap<>();
+
+    @Nullable
+    private LongSet settledSections;
 
     private final ConcurrentLinkedDeque<ChunkJobResult<ChunkBuildOutput>> buildResults = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<Runnable> asyncSubmittedTasks = new ConcurrentLinkedDeque<>();
@@ -277,6 +282,10 @@ public class RenderSectionManager {
 
         RenderSection renderSection = new RenderSection(region, x, y, z);
         region.addSection(renderSection);
+
+        if (this.settledSections != null && this.settledSections.remove(key)) {
+            renderSection.skipFadeIn();
+        }
 
         this.sectionByPosition.put(key, renderSection);
 
@@ -573,6 +582,22 @@ public class RenderSectionManager {
 
     public ChunkBuilder getBuilder() {
         return this.builder;
+    }
+
+    public LongSet collectSettledSections() {
+        LongOpenHashSet settled = new LongOpenHashSet(this.sectionByPosition.size());
+
+        for (var entry : Long2ReferenceMaps.fastIterable(this.sectionByPosition)) {
+            if (entry.getValue().isFadeInDecided()) {
+                settled.add(entry.getLongKey());
+            }
+        }
+
+        return settled;
+    }
+
+    public void setSettledSections(@Nullable LongSet settled) {
+        this.settledSections = settled;
     }
 
     public void destroy() {

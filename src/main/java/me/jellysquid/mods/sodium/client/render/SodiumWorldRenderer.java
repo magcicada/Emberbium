@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
@@ -315,7 +316,10 @@ public class SodiumWorldRenderer {
     }
 
     private void initRenderer(CommandList commandList) {
+        LongSet settledSections = null;
+
         if (this.renderSectionManager != null) {
+            settledSections = this.renderSectionManager.collectSettledSections();
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
         }
@@ -327,7 +331,9 @@ public class SodiumWorldRenderer {
         this.renderSectionManager = new RenderSectionManager(this.world, this.renderDistance, commandList);
 
         var tracker = ChunkTrackerHolder.get(this.world);
+        this.renderSectionManager.setSettledSections(settledSections);
         ChunkTracker.forEachChunk(tracker.getReadyChunks(), this.renderSectionManager::onChunkAdded);
+        this.renderSectionManager.setSettledSections(null);
 
         // Forge workaround - reset VSync flag
         var window = Minecraft.getInstance().getWindow();

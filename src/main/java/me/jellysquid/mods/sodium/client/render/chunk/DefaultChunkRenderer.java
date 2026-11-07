@@ -21,6 +21,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
+import org.embeddedt.embeddium.render.chunk.ChunkFadeIn;
 import org.lwjgl.system.MemoryUtil;
 import java.util.Iterator;
 
@@ -35,6 +36,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private int minSectionDistance = 0;
     private int maxSectionDistance = Integer.MAX_VALUE;
+
+    private final float[] fadeInProgress = new float[RenderRegion.REGION_SIZE];
 
     public DefaultChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         super(device, vertexType);
@@ -65,6 +68,10 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         boolean mergeDraws = !this.isIndexedPass;
 
+        boolean fadeIn = ChunkFadeIn.active();
+        int fadeInNow = fadeIn ? ChunkFadeIn.now() : 0;
+        boolean fadeInBound = false;
+
         while (iterator.hasNext()) {
             ChunkRenderList renderList = iterator.next();
 
@@ -89,6 +96,20 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             }
 
             var tessellation = this.prepareTessellation(commandList, region);
+
+            if (fadeIn) {
+                boolean regionFadingIn = region.isFadingIn(fadeInNow);
+
+                if (regionFadingIn != fadeInBound) {
+                    fadeInBound = regionFadingIn;
+                    shader = fadeInBound ? this.bindFadeInProgram(renderPass, matrices) : this.bindActiveProgram();
+                }
+
+                if (fadeInBound) {
+                    region.writeFadeIn(this.fadeInProgress, fadeInNow);
+                    shader.setFadeIn(this.fadeInProgress);
+                }
+            }
 
             setModelMatrixUniforms(shader, region, camera);
             executeDrawBatch(commandList, tessellation, this.batch);

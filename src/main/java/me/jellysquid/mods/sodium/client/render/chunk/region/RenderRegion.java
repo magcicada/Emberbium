@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexTy
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.core.SectionPos;
 import org.apache.commons.lang3.Validate;
+import org.embeddedt.embeddium.render.chunk.ChunkFadeIn;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -51,6 +52,9 @@ public class RenderRegion {
     private final Map<TerrainRenderPass, SectionRenderDataStorage> sectionRenderData = new Reference2ReferenceOpenHashMap<>();
     private DeviceResources resources;
 
+    private int[] fadeInStarts;
+    private int fadeInEnd;
+
     public RenderRegion(int x, int y, int z, StagingBuffer stagingBuffer) {
         this.x = x;
         this.y = y;
@@ -62,6 +66,43 @@ public class RenderRegion {
 
     public static long key(int x, int y, int z) {
         return SectionPos.asLong(x, y, z);
+    }
+
+    public void startFadeIn(int sectionIndex) {
+        if (!ChunkFadeIn.active()) {
+            return;
+        }
+
+        int now = ChunkFadeIn.now();
+
+        if (this.fadeInStarts == null) {
+            this.fadeInStarts = new int[REGION_SIZE];
+            Arrays.fill(this.fadeInStarts, now - ChunkFadeIn.DURATION_MILLIS);
+        }
+
+        this.fadeInStarts[sectionIndex] = now;
+        this.fadeInEnd = now + ChunkFadeIn.DURATION_MILLIS;
+    }
+
+    public boolean isFadingIn(int now) {
+        if (this.fadeInStarts == null) {
+            return false;
+        }
+
+        if (now - this.fadeInEnd >= 0) {
+            this.fadeInStarts = null;
+            return false;
+        }
+
+        return true;
+    }
+
+    public void writeFadeIn(float[] progress, int now) {
+        int[] starts = this.fadeInStarts;
+
+        for (int i = 0; i < REGION_SIZE; i++) {
+            progress[i] = ChunkFadeIn.progress(starts[i], now);
+        }
     }
 
     public int getChunkX() {

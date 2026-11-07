@@ -17,6 +17,10 @@ uniform float u_FogEnd; // The ending position of the shader fog
 
 out vec4 fragColor; // The output fragment for the color framebuffer
 
+#ifdef USE_CHUNK_FADE_IN
+flat in float v_FadeIn;
+#endif
+
 void main() {
     vec4 diffuseColor = texture(u_BlockTex, v_TexCoord, v_MaterialMipBias);
 
@@ -38,4 +42,8 @@ void main() {
 #endif
 
     fragColor = _linearFog(diffuseColor, v_FragDistance, u_FogColor, u_FogStart, u_FogEnd);
+
+#ifdef USE_CHUNK_FADE_IN
+    fragColor.rgb = mix(u_FogColor.rgb, fragColor.rgb, v_FadeIn);
+#endif
 }

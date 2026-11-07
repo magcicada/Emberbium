@@ -62,6 +62,13 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
     }
 
     @Override
+    public <U extends GlUniform<?>> U bindUniformIfPresent(String name, IntFunction<U> factory) {
+        int index = GL20C.glGetUniformLocation(this.handle(), name);
+
+        return index < 0 ? null : factory.apply(index);
+    }
+
+    @Override
     public GlUniformBlock bindUniformBlock(String name, int bindingPoint) {
         int index = GL32C.glGetUniformBlockIndex(this.handle(), name);
 

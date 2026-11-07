@@ -6,7 +6,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshForm
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import org.embeddedt.embeddium.render.ShaderModBridge;
 
-public record ChunkShaderOptions(ChunkFogMode fog, TerrainRenderPass pass, ChunkVertexType vertexType) {
+public record ChunkShaderOptions(ChunkFogMode fog, TerrainRenderPass pass, ChunkVertexType vertexType, boolean fadeIn) {
+    public ChunkShaderOptions(ChunkFogMode fog, TerrainRenderPass pass, ChunkVertexType vertexType) {
+        this(fog, pass, vertexType, false);
+    }
+
     /**
      * @deprecated Only kept for Iris/Oculus compatibility, do not use
      */
@@ -35,6 +39,10 @@ public record ChunkShaderOptions(ChunkFogMode fog, TerrainRenderPass pass, Chunk
 
         if(!ShaderModBridge.emulateLegacyColorBrightnessFormat()) {
             constants.add("USE_VANILLA_COLOR_FORMAT");
+        }
+
+        if (this.fadeIn) {
+            constants.add("USE_CHUNK_FADE_IN");
         }
 
         return constants.build();

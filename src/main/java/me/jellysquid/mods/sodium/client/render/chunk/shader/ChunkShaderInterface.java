@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat3v;
+import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat4v;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
 import me.jellysquid.mods.sodium.client.util.TextureUtil;
@@ -20,6 +21,7 @@ public class ChunkShaderInterface {
     private final GlUniformMatrix4f uniformModelViewMatrix;
     private final GlUniformMatrix4f uniformProjectionMatrix;
     private final GlUniformFloat3v uniformRegionOffset;
+    private final GlUniformFloat4v uniformFadeIn;
 
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
@@ -30,6 +32,7 @@ public class ChunkShaderInterface {
         this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
         this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
         this.uniformRegionOffset = context.bindUniform("u_RegionOffset", GlUniformFloat3v::new);
+        this.uniformFadeIn = options.fadeIn() ? context.bindUniformIfPresent("u_FadeIn", GlUniformFloat4v::new) : null;
 
         this.uniformTextures = new EnumMap<>(ChunkShaderTextureSlot.class);
         this.uniformTextures.put(ChunkShaderTextureSlot.BLOCK, context.bindUniform("u_BlockTex", GlUniformInt::new));
@@ -69,5 +72,11 @@ public class ChunkShaderInterface {
 
     public void setRegionOffset(float x, float y, float z) {
         this.uniformRegionOffset.set(x, y, z);
+    }
+
+    public void setFadeIn(float[] progress) {
+        if (this.uniformFadeIn != null) {
+            this.uniformFadeIn.setArray(progress);
+        }
     }
 }

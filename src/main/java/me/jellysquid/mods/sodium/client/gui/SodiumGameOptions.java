@@ -70,6 +70,8 @@ public class SodiumGameOptions {
 
         public boolean enableVignette = true;
 
+        public boolean enableChunkFadeIn = true;
+
         public boolean useQuadNormalsForShading = false;
     }
 

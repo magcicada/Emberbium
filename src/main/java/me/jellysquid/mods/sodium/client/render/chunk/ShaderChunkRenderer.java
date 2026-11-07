@@ -74,6 +74,24 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                 .setupState();
     }
 
+    protected ChunkShaderInterface bindFadeInProgram(TerrainRenderPass pass, ChunkRenderMatrices matrices) {
+        GlProgram<ChunkShaderInterface> program = this.compileProgram(new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass, this.vertexType, true));
+        program.bind();
+
+        ChunkShaderInterface shader = program.getInterface();
+        shader.setupState();
+        shader.setProjectionMatrix(matrices.projection());
+        shader.setModelViewMatrix(matrices.modelView());
+
+        return shader;
+    }
+
+    protected ChunkShaderInterface bindActiveProgram() {
+        this.activeProgram.bind();
+
+        return this.activeProgram.getInterface();
+    }
+
     protected void end(TerrainRenderPass pass) {
         this.activeProgram.unbind();
         this.activeProgram = null;

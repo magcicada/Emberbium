@@ -260,6 +260,12 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.quality.enableVignette = value, opts -> opts.quality.enableVignette)
                         .setImpact(OptionImpact.LOW)
                         .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setId(StandardOptions.Option.CHUNK_FADE_IN)
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.quality.enableChunkFadeIn = value, opts -> opts.quality.enableChunkFadeIn)
+                        .setImpact(OptionImpact.LOW)
+                        .build())
                 .build());
 
 
