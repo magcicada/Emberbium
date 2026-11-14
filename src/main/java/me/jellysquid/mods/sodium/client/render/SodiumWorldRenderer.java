@@ -378,6 +378,11 @@ public class SodiumWorldRenderer {
                 var renderSectionId = renderSectionIterator.nextByteAsInt();
                 var renderSection = renderRegion.getSection(renderSectionId);
 
+                // A render list can still reference a section removed during chunk unloading.
+                if (renderSection == null) {
+                    continue;
+                }
+
                 var blockEntities = renderSection.getCulledBlockEntities();
 
                 if (blockEntities == null) {
@@ -422,6 +427,11 @@ public class SodiumWorldRenderer {
             while (renderSectionIterator.hasNext()) {
                 var renderSectionId = renderSectionIterator.nextByteAsInt();
                 var renderSection = renderRegion.getSection(renderSectionId);
+
+                // A render list can still reference a section removed during chunk unloading.
+                if (renderSection == null) {
+                    continue;
+                }
 
                 var blockEntities = renderSection.getCulledBlockEntities();
 
@@ -493,6 +503,11 @@ public class SodiumWorldRenderer {
             while (renderSectionIterator.hasNext()) {
                 var renderSectionId = renderSectionIterator.nextByteAsInt();
                 var renderSection = renderRegion.getSection(renderSectionId);
+
+                // A render list can still reference a section removed during chunk unloading.
+                if (renderSection == null) {
+                    continue;
+                }
 
                 var blockEntities = renderSection.getCulledBlockEntities();
 
