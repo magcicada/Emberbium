@@ -6,7 +6,10 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -22,6 +25,41 @@ public class GlBufferArena {
      * When the arena needs to be grown, it will generally attempt to increase its size by (1 / RESIZE_FACTOR).
      */
     private static final int RESIZE_FACTOR = 2;
+    private static final long MAX_POOLED_BYTES = 256L << 20;
+    private static final Long2ObjectOpenHashMap<ArrayDeque<GlMutableBuffer>> POOL = new Long2ObjectOpenHashMap<>();
+    private static long pooledBytes;
+    public static boolean poolBuffers = !Boolean.getBoolean("embeddium.noBufferPool");
+
+    private static GlMutableBuffer obtain(CommandList commands, long bytes) {
+        ArrayDeque<GlMutableBuffer> free = poolBuffers ? POOL.get(bytes) : null;
+        if (free != null && !free.isEmpty()) {
+            pooledBytes -= bytes;
+            return free.pop();
+        }
+        GlMutableBuffer buffer = commands.createMutableBuffer();
+        commands.allocateStorage(buffer, bytes, BUFFER_USAGE);
+        return buffer;
+    }
+
+    private static void recycle(CommandList commands, GlMutableBuffer buffer) {
+        long bytes = buffer.getSize();
+        if (!poolBuffers || bytes <= 0 || pooledBytes + bytes > MAX_POOLED_BYTES) {
+            commands.deleteBuffer(buffer);
+            return;
+        }
+        POOL.computeIfAbsent(bytes, k -> new ArrayDeque<>()).push(buffer);
+        pooledBytes += bytes;
+    }
+
+    public static void clearPool(CommandList commands) {
+        for (ArrayDeque<GlMutableBuffer> free : POOL.values()) {
+            for (GlMutableBuffer buffer : free) {
+                commands.deleteBuffer(buffer);
+            }
+        }
+        POOL.clear();
+        pooledBytes = 0;
+    }
 
     private int resizeIncrement;
 
@@ -44,8 +82,7 @@ public class GlBufferArena {
         this.head = new GlBufferSegment(this, 0, initialCapacity);
         this.head.setFree(true);
 
-        this.arenaBuffer = commands.createMutableBuffer();
-        commands.allocateStorage(this.arenaBuffer, (long)this.capacity * stride, BUFFER_USAGE);
+        this.arenaBuffer = obtain(commands, (long)this.capacity * stride);
 
         this.stagingBuffer = stagingBuffer;
     }
@@ -123,9 +160,7 @@ public class GlBufferArena {
 
     private void transferSegments(CommandList commandList, Collection<PendingBufferCopyCommand> list, int capacity) {
         GlMutableBuffer srcBufferObj = this.arenaBuffer;
-        GlMutableBuffer dstBufferObj = commandList.createMutableBuffer();
-
-        commandList.allocateStorage(dstBufferObj, (long)capacity * this.stride, BUFFER_USAGE);
+        GlMutableBuffer dstBufferObj = obtain(commandList, (long)capacity * this.stride);
 
         for (PendingBufferCopyCommand cmd : list) {
             commandList.copyBufferSubData(srcBufferObj, dstBufferObj,
@@ -134,7 +169,7 @@ public class GlBufferArena {
                     (long)cmd.length * this.stride);
         }
 
-        commandList.deleteBuffer(srcBufferObj);
+        recycle(commandList, srcBufferObj);
 
         this.arenaBuffer = dstBufferObj;
         this.capacity = capacity;
@@ -257,7 +292,7 @@ public class GlBufferArena {
     }
 
     public void delete(CommandList commands) {
-        commands.deleteBuffer(this.arenaBuffer);
+        recycle(commands, this.arenaBuffer);
     }
 
     public boolean isEmpty() {
