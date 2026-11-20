@@ -198,6 +198,7 @@ public class RenderRegionManager {
 
         this.regions.clear();
         this.stagingBuffer.delete(commandList);
+        me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena.clearPool(commandList);
     }
 
     public Collection<RenderRegion> getLoadedRegions() {
